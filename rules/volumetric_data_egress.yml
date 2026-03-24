@@ -1,0 +1,65 @@
+title: Volumetric Data Egress Anomaly
+id: a1b2c3d4-0005-4000-8000-stryker000005
+status: experimental
+description: |
+  Detects outbound data transfer volumes that significantly exceed the
+  historical baseline for a source host or subnet. The Stryker attack
+  involved 50TB of data exfiltration, which would produce a clear
+  volumetric anomaly on any network with baseline monitoring. This rule
+  triggers when egress exceeds 3x the rolling 30-day average for the
+  source, or when absolute volume exceeds a configurable threshold.
+references:
+  - https://attack.mitre.org/techniques/T1048/
+  - https://www.cisa.gov/news-events/alerts/2026/03/18/cisa-urges-endpoint-management-system-hardening-after-cyberattack-against-us-organization
+author: Jacob Cook
+date: 2026/03/22
+tags:
+  - attack.exfiltration
+  - attack.t1048
+  - attack.t1041
+  - attack.collection
+  - attack.t1005
+logsource:
+  category: firewall
+  # Also applicable to: proxy logs, NetFlow/IPFIX, cloud VPC flow logs
+detection:
+  selection:
+    Direction: 'outbound'
+  filter_known_services:
+    DestinationIP|cidr:
+      - '10.0.0.0/8'      # internal
+      - '172.16.0.0/12'   # internal
+      - '192.168.0.0/16'  # internal
+  condition: selection and not filter_known_services
+  # Post-processing required:
+  # 1. Aggregate bytes_out by SourceIP per hour
+  # 2. Compare against 30-day rolling average from KV store
+  # 3. Alert if current_hour > 3x baseline OR current_hour > 10GB absolute
+  # SPL implementation:
+  # index=firewall direction=outbound
+  # | stats sum(bytes_out) as total_bytes by src_ip
+  # | lookup egress_baseline src_ip OUTPUT avg_bytes_30d
+  # | eval ratio = total_bytes / avg_bytes_30d
+  # | where ratio > 3 OR total_bytes > 10737418240
+falsepositives:
+  - Legitimate large file transfers (backups, migrations, software deployments)
+  - Video conferencing heavy usage days
+  - Cloud sync services (OneDrive, SharePoint) after policy changes
+  - Monthly reporting jobs that generate large outbound datasets
+  - Verify destination IP/domain reputation before escalating
+level: high
+fields:
+  - SourceIP
+  - DestinationIP
+  - DestinationPort
+  - BytesOut
+  - Protocol
+  - Application
+  - UserAgent
+enrichment:
+  - lookup: egress_baseline
+    key: SourceIP
+    output: avg_bytes_30d, max_bytes_30d, department, last_alert_date
+  - lookup: threat_intel
+    key: DestinationIP
+    output: is_malicious, threat_family, country, asn

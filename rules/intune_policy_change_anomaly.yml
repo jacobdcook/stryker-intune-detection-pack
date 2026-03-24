@@ -1,0 +1,54 @@
+title: Intune Configuration Policy Created or Modified Outside Change Window
+id: a1b2c3d4-0002-4000-8000-stryker000002
+status: experimental
+description: |
+  Detects creation or modification of Intune device configuration profiles,
+  compliance policies, or app protection policies outside of defined change
+  windows (business hours). Attackers with Intune admin access can push
+  malicious configuration profiles that disable security controls, deploy
+  wiper payloads, or modify compliance baselines to prevent detection.
+references:
+  - https://learn.microsoft.com/en-us/graph/api/resources/intune-deviceconfig-deviceconfiguration
+  - https://www.cisa.gov/news-events/alerts/2026/03/18/cisa-urges-endpoint-management-system-hardening-after-cyberattack-against-us-organization
+author: Jacob Cook
+date: 2026/03/22
+tags:
+  - attack.defense-evasion
+  - attack.t1484.002
+  - attack.persistence
+  - attack.t1098
+logsource:
+  product: azure
+  service: intune
+  category: audit
+detection:
+  selection_action:
+    Activity|contains:
+      - 'Create DeviceConfiguration'
+      - 'Patch DeviceConfiguration'
+      - 'Create DeviceCompliancePolicy'
+      - 'Patch DeviceCompliancePolicy'
+      - 'Create DeviceManagementScript'
+      - 'Patch DeviceManagementScript'
+  filter_change_window:
+    # Exclude known change windows (adjust per org)
+    EventTime|re: '.*T(0[89]|1[0-7]):\d{2}.*'  # 08:00-17:59 UTC
+  condition: selection_action and not filter_change_window
+falsepositives:
+  - Emergency patching outside normal hours
+  - Admins in different time zones
+  - Automated policy deployments via CI/CD pipeline
+  - Cross-reference with on-call schedule and change management system
+level: high
+fields:
+  - InitiatedByUser
+  - Activity
+  - PolicyName
+  - TargetGroups
+  - IPAddress
+  - UserAgent
+  - EventTime
+enrichment:
+  - lookup: admin_baseline
+    key: InitiatedByUser
+    output: normal_hours, typical_policies_modified, on_call_status

@@ -1,0 +1,60 @@
+title: Intune/Entra Admin Role Assignment to Non-Admin Account
+id: a1b2c3d4-0006-4000-8000-stryker000006
+status: experimental
+description: |
+  Detects when Intune-related admin roles are assigned to an account that
+  did not previously hold admin privileges. Attackers who compromise a
+  regular user account may escalate privileges by assigning themselves
+  Intune Administrator, Global Administrator, or Cloud Device Administrator
+  roles to gain the access needed for mass device management actions.
+  This is a prerequisite step for an Intune-based wiper attack.
+references:
+  - https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference
+  - https://attack.mitre.org/techniques/T1098/
+author: Jacob Cook
+date: 2026/03/22
+tags:
+  - attack.persistence
+  - attack.t1098
+  - attack.privilege-escalation
+  - attack.t1078.004
+logsource:
+  product: azure
+  service: entra-id
+  category: audit
+detection:
+  selection:
+    Activity|contains:
+      - 'Add member to role'
+      - 'Add eligible member to role'
+    TargetRole|contains:
+      - 'Global Administrator'
+      - 'Intune Administrator'
+      - 'Cloud Device Administrator'
+      - 'Privileged Role Administrator'
+      - 'Security Administrator'
+  filter_service_accounts:
+    InitiatedByUser|endswith:
+      - '@serviceaccount.onmicrosoft.com'
+  condition: selection and not filter_service_accounts
+falsepositives:
+  - Legitimate role assignment during onboarding of new IT staff
+  - PIM (Privileged Identity Management) eligible role activations
+  - Automated provisioning via SCIM or HR-driven lifecycle workflows
+  - Break-glass account activation during outages
+  - Cross-reference with HR onboarding tickets and PIM activation logs
+level: critical
+fields:
+  - InitiatedByUser
+  - TargetUser
+  - TargetRole
+  - IPAddress
+  - UserAgent
+  - OperationResult
+enrichment:
+  - lookup: admin_baseline
+    key: TargetUser
+    output: previous_roles, department, manager, hire_date
+  - lookup: geoip
+    key: IPAddress
+    output: city, country, asn

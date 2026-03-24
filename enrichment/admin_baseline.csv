@@ -1,0 +1,5 @@
+UserPrincipalName,normal_daily_actions,typical_policies_modified,normal_hours,typical_locations,typical_devices,on_call_status,department,mfa_methods,last_wipe_date
+admin@contoso.com,15,3,08:00-18:00 UTC,US-East,DESKTOP-ADMIN01,off,IT,push+fido2,2026-01-15
+itops@contoso.com,25,5,06:00-20:00 UTC,US-East|US-West,DESKTOP-ITOPS01,on,IT Operations,push,2026-02-28
+secadmin@contoso.com,10,1,09:00-17:00 UTC,US-East,DESKTOP-SEC01,off,Security,fido2,never
+breakglass@contoso.com,0,0,N/A,N/A,N/A,emergency-only,IT,hardware-token,never

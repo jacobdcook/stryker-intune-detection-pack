@@ -1,0 +1,9 @@
+DeviceId,hostname,owner,department,criticality,device_type,os,location
+DEV-001,web-prod-01,jsmith,Engineering,critical,server,Windows Server 2022,US-East
+DEV-002,db-prod-01,jdoe,Engineering,critical,server,Windows Server 2022,US-East
+DEV-003,laptop-sales-042,mwilson,Sales,medium,laptop,Windows 11,US-West
+DEV-004,laptop-exec-001,cjohnson,Executive,critical,laptop,Windows 11,US-East
+DEV-005,kiosk-lobby-01,facilities,Facilities,low,kiosk,Windows 11,US-East
+DEV-006,dev-workstation-12,alee,Engineering,medium,workstation,Windows 11,US-West
+DEV-007,laptop-hr-003,bgarcia,HR,high,laptop,Windows 11,US-East
+DEV-008,server-intune-01,sysadmin,IT,critical,server,Windows Server 2022,US-East

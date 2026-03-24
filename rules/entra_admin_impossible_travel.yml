@@ -1,0 +1,63 @@
+title: Entra ID Admin Impossible Travel Login
+id: a1b2c3d4-0003-4000-8000-stryker000003
+status: experimental
+description: |
+  Detects when an Entra ID account with administrative roles (Global Admin,
+  Intune Admin, Security Admin) authenticates from two geographically
+  distant locations within a timeframe that makes physical travel impossible.
+  In the Stryker attack, the threat actor needed Intune admin credentials.
+  Impossible travel on admin accounts is a strong signal of credential
+  compromise, especially when followed by Intune management actions.
+references:
+  - https://learn.microsoft.com/en-us/entra/identity/monitoring-health/concept-sign-ins
+  - https://attack.mitre.org/techniques/T1078/004/
+author: Jacob Cook
+date: 2026/03/22
+tags:
+  - attack.initial-access
+  - attack.t1078.004
+  - attack.credential-access
+  - attack.t1110
+logsource:
+  product: azure
+  service: entra-id
+  category: signin
+detection:
+  selection:
+    ResultType: 0  # successful login only
+    UserRoles|contains:
+      - 'Global Administrator'
+      - 'Intune Administrator'
+      - 'Security Administrator'
+      - 'Privileged Role Administrator'
+      - 'Cloud Device Administrator'
+  # Impossible travel logic: same user, two logins within 60 minutes,
+  # geoIP distance > 500 miles. Requires post-processing with Haversine
+  # distance calculation or SIEM-native impossible travel detection.
+  timeframe: 60m
+  condition: selection | count() by UserPrincipalName > 1
+  # NOTE: Full impossible travel requires correlating lat/lon from
+  # IPAddress field via GeoIP enrichment and calculating distance.
+  # This rule flags the precondition (multiple admin logins in short window).
+  # Pair with GeoIP enrichment lookup for full detection.
+falsepositives:
+  - Admin using VPN that exits in different geographic regions
+  - Shared admin accounts (should not exist but often do)
+  - Cloud shell or Azure portal sessions from mobile + desktop simultaneously
+  - Admin traveling with laptop and phone on different networks
+level: high
+fields:
+  - UserPrincipalName
+  - IPAddress
+  - Location
+  - DeviceDetail
+  - AppDisplayName
+  - ConditionalAccessStatus
+  - MfaDetail
+enrichment:
+  - lookup: geoip
+    key: IPAddress
+    output: city, country, latitude, longitude, asn, isp
+  - lookup: admin_baseline
+    key: UserPrincipalName
+    output: typical_locations, typical_devices, mfa_methods

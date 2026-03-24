@@ -1,0 +1,50 @@
+title: Bulk Device Compliance State Drift
+id: a1b2c3d4-0004-4000-8000-stryker000004
+status: experimental
+description: |
+  Detects when a large number of Intune-managed devices transition from
+  compliant to non-compliant state within a short time window. During the
+  Stryker attack, 200,000 devices were wiped simultaneously, which would
+  cause a massive compliance state change as devices stop reporting or
+  fail health checks. This anomaly is detectable before the full impact
+  is realized, potentially giving defenders a narrow response window.
+references:
+  - https://learn.microsoft.com/en-us/mem/intune/protect/device-compliance-get-started
+  - https://www.cisa.gov/news-events/alerts/2026/03/18/cisa-urges-endpoint-management-system-hardening-after-cyberattack-against-us-organization
+author: Jacob Cook
+date: 2026/03/22
+tags:
+  - attack.impact
+  - attack.t1485
+  - attack.t1489
+logsource:
+  product: azure
+  service: intune
+  category: compliance
+detection:
+  selection:
+    ComplianceState|contains:
+      - 'NonCompliant'
+      - 'NotEvaluated'
+      - 'InGracePeriod'
+    PreviousComplianceState: 'Compliant'
+  timeframe: 15m
+  condition: selection | count() > 100
+falsepositives:
+  - Compliance policy update that changes requirements (new baseline deployed)
+  - Certificate expiration affecting multiple devices simultaneously
+  - Network outage causing devices to lose connectivity and fail check-in
+  - Intune service degradation or API timeout causing false non-compliant reports
+level: critical
+fields:
+  - DeviceName
+  - DeviceId
+  - ComplianceState
+  - PreviousComplianceState
+  - OperatingSystem
+  - LastCheckIn
+  - UserPrincipalName
+enrichment:
+  - lookup: asset_info
+    key: DeviceId
+    output: owner, department, criticality, device_type

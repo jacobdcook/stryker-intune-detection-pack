@@ -1,0 +1,50 @@
+title: Intune Mass Device Wipe/Retire Threshold
+id: a1b2c3d4-0001-4000-8000-stryker000001
+status: experimental
+description: |
+  Detects when a single admin account issues an unusually high number of
+  device wipe or retire commands through Microsoft Intune within a short
+  time window. In the Stryker attack, Handala used compromised Intune admin
+  access to push wipe commands to 200,000 devices simultaneously.
+references:
+  - https://www.cisa.gov/news-events/alerts/2026/03/18/cisa-urges-endpoint-management-system-hardening-after-cyberattack-against-us-organization
+  - https://learn.microsoft.com/en-us/graph/api/intune-devices-manageddevice-wipe
+author: Jacob Cook
+date: 2026/03/22
+tags:
+  - attack.impact
+  - attack.t1485
+  - attack.t1561
+logsource:
+  product: azure
+  service: intune
+  category: audit
+detection:
+  selection:
+    Activity|contains:
+      - 'wipeManagedDevice'
+      - 'retireManagedDevice'
+      - 'remoteLock'
+      - 'deleteDevice'
+  timeframe: 1h
+  condition: selection | count(Activity) by InitiatedByUser > 50
+falsepositives:
+  - Legitimate IT decommissioning events (large batch device retirements)
+  - End-of-quarter hardware refresh cycles
+  - MDM migration from Intune to another platform
+  - Verify against change management tickets before escalating
+level: critical
+fields:
+  - InitiatedByUser
+  - Activity
+  - DeviceId
+  - TargetDeviceName
+  - IPAddress
+  - UserAgent
+enrichment:
+  - lookup: admin_baseline
+    key: InitiatedByUser
+    output: normal_daily_actions, department, last_wipe_date
+  - lookup: asset_info
+    key: DeviceId
+    output: owner, department, criticality
