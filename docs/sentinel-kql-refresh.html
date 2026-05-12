@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sentinel KQL refresh — Stryker Intune pack</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1a1a1a; }
+    h1 { font-size: 1.35rem; }
+    h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+    code, pre { background: #f4f4f4; padding: 0.15rem 0.35rem; border-radius: 4px; }
+    pre { padding: 1rem; overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #ccc; padding: 0.4rem 0.6rem; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>Microsoft Sentinel KQL (quick refresh)</h1>
+  <p>This repo ships three optional Sentinel queries under <code>kql/</code>. They read <strong>AuditLogs</strong> and look for abuse patterns aligned with the Sigma rules in <code>rules/</code>.</p>
+
+  <h2>What each query does</h2>
+  <table>
+    <thead><tr><th>File</th><th>Idea</th></tr></thead>
+    <tbody>
+      <tr><td><code>intune_mass_wipe_retire_burst.kql</code></td><td>Many wipe, retire, delete, or lock operations from one actor inside a one hour bin.</td></tr>
+      <tr><td><code>intune_policy_change_velocity.kql</code></td><td>High rate of device or compliance policy changes per actor per hour.</td></tr>
+      <tr><td><code>entra_privileged_intune_window.kql</code></td><td>Role management events (user added to a role) followed within four hours by Intune device category actions from the same user.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>How to run</h2>
+  <ol>
+    <li>Open Microsoft Sentinel, Logs.</li>
+    <li>Paste a query, run over a short lookback first.</li>
+    <li>Tune thresholds at the top of each file (<code>min_ops</code>, <code>min_changes</code>, <code>gap</code>).</li>
+  </ol>
+
+  <h2>Tenant caveat</h2>
+  <p><code>OperationName</code> and <code>ActivityDisplayName</code> strings vary by product version. Export a few real rows from <code>AuditLogs</code> where <code>Category == "Device"</code> and adjust the <code>has_any</code> lists to match your environment.</p>
+
+  <p><strong>Verify in repo:</strong> <code>pytest tests/test_kql.py -v</code></p>
+</body>
+</html>

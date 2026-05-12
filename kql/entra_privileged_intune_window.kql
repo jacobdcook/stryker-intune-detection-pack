@@ -1,0 +1,27 @@
+// Entra privileged role activity followed by Intune device-category operations within a time window
+// (maps to entra_admin_impossible_travel + intune_admin_privilege_escalation themes)
+// Joins RoleManagement audit events with Device-category actions for the same actor.
+
+let lookback = 7d;
+let gap = 4h;
+let roleAdds = AuditLogs
+| where TimeGenerated > ago(lookback)
+| where Category == "RoleManagement"
+| where
+    OperationName has_any ("Add member to role", "Add eligible member")
+    or ActivityDisplayName has "Add member to role"
+| mv-expand TargetResource = TargetResources
+| extend Actor = tostring(TargetResource.userPrincipalName)
+| where isnotempty(Actor)
+| project RoleTime = TimeGenerated, Actor, RoleOperation = OperationName;
+let intuneOps = AuditLogs
+| where TimeGenerated > ago(lookback)
+| where Category == "Device" or Category == "ApplicationManagement"
+| extend Actor = tostring(InitiatedBy.user.userPrincipalName)
+| where isnotempty(Actor)
+| project IntuneTime = TimeGenerated, Actor, IntuneOp = OperationName, CorrelationId;
+roleAdds
+| join kind=inner hint.strategy=broadcast intuneOps on Actor
+| where IntuneTime between (RoleTime .. (RoleTime + gap))
+| project RoleTime, IntuneTime, Actor, RoleOperation, IntuneOp, CorrelationId
+| order by IntuneTime desc

@@ -1,0 +1,28 @@
+// Intune policy and compliance change velocity (maps to Sigma: intune_policy_change_anomaly, T1484.002)
+// Surfaces actors patching or creating device policies faster than typical admin baselines allow.
+// Table: AuditLogs
+
+let lookback = 7d;
+let window = 1h;
+let min_changes = 15;
+AuditLogs
+| where TimeGenerated > ago(lookback)
+| where
+    ActivityDisplayName has_any (
+      "DeviceConfiguration", "Device Compliance", "CompliancePolicy",
+      "DeviceManagementScript", "configuration policy", "Compliance policy"
+    )
+    or OperationName has_any (
+      "Patch", "Create", "Update", "deviceConfiguration", "compliancePolicy"
+    )
+| extend Actor = tostring(InitiatedBy.user.userPrincipalName)
+| where isnotempty(Actor)
+| summarize
+    ChangeCount = count(),
+    SampleOps = any(ActivityDisplayName),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated)
+  by Actor, bin(TimeGenerated, window)
+| where ChangeCount >= min_changes
+| project FirstSeen, LastSeen, Actor, ChangeCount, SampleOps
+| order by ChangeCount desc

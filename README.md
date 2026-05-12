@@ -27,9 +27,13 @@ All rules use [Sigma](https://github.com/SigmaHQ/sigma) format (vendor-agnostic 
 | [volumetric_data_egress](rules/volumetric_data_egress.yml) | T1048 (Exfiltration Over Alternative Protocol) | Firewall/proxy/NetFlow |
 | [intune_admin_privilege_escalation](rules/intune_admin_privilege_escalation.yml) | T1098 (Account Manipulation) | Entra ID audit logs |
 
+## Microsoft Sentinel KQL
+
+Correlated [KQL](kql/) queries for `AuditLogs`: mass wipe and retire burst, policy change velocity, and Entra role activity correlated with Intune device operations. See [kql/README.md](kql/README.md).
+
 ## Reproducible Verification
 
-Every claim in this project is tested. Run `pytest tests/test_rules.py -v` to reproduce.
+Every claim in this project is tested. Run `pytest tests/ -v` to reproduce (Sigma tests plus KQL artifact checks).
 
 | What the test proves | How |
 |---|---|
@@ -38,8 +42,9 @@ Every claim in this project is tested. Run `pytest tests/test_rules.py -v` to re
 | 3 malicious attack scenarios per rule (18 total) | Each malicious case is run through the enriched detector — must alert |
 | 100% false-positive reduction on mass-wipe simulation | 100 synthetic events (80 benign, 20 malicious) scored by naive rule vs enriched rule using `admin_baseline.csv` lookups. Naive rule alerts on all 100. Enriched rule suppresses all 80 benign, catches all 20 malicious |
 | 5+ unique MITRE ATT&CK techniques covered | Extracts tags from all rules and counts distinct `attack.tXXXX` entries |
+| 3 Sentinel KQL queries present and referencing `AuditLogs` | `tests/test_kql.py` |
 
-**43 tests, 0 failures.**
+**45 tests, 0 failures.**
 
 The enrichment logic simulates KV store lookups (admin baselines, change tickets, VPN status, destination reputation) — the same approach used in production Splunk environments to reduce alert fatigue without losing coverage.
 

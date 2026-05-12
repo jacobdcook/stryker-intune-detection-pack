@@ -1,0 +1,25 @@
+// Intune / Graph mass wipe or retire burst (maps to Sigma: intune_mass_device_wipe, T1485)
+// Table: AuditLogs (Microsoft Entra / Intune device actions often appear under Category Device)
+// Tune threshold and bin to your tenant.
+
+let lookback = 7d;
+let window = 1h;
+let min_ops = 50;
+AuditLogs
+| where TimeGenerated > ago(lookback)
+| where Category == "Device" or Category == "ApplicationManagement"
+| where OperationName has_any (
+    "wipe", "Wipe", "retire", "Retire", "deleteDevice", "DeleteDevice",
+    "remoteLock", "RemoteLock"
+  )
+| extend Actor = tostring(InitiatedBy.user.userPrincipalName)
+| where isnotempty(Actor)
+| summarize
+    OperationCount = count(),
+    Operations = make_set(OperationName, 100),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated)
+  by Actor, bin(TimeGenerated, window)
+| where OperationCount >= min_ops
+| project FirstSeen, LastSeen, Actor, OperationCount, Operations
+| order by OperationCount desc
