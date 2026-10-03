@@ -1,6 +1,6 @@
 # Intune MDM Abuse Detection Pack
 
-Detection-as-code pack targeting Microsoft Intune MDM abuse. It uses the March 2026 attack on Stryker Corporation as a cited case study: the hacktivist group Handala claimed it used compromised Intune access to factory-reset about 200,000 devices and alleged exfiltration of roughly 50TB of data. Stryker has publicly stated this was not a ransomware attack and that its investigation found no evidence of data exfiltration, so the exfiltration figure is an attacker claim, not a confirmed fact. See [References](#references).
+Detection-as-code pack targeting Microsoft Intune MDM abuse. It uses the March 2026 attack on Stryker Corporation as a cited case study: the hacktivist group Handala claimed it used compromised Intune access to factory-reset about 200,000 devices and alleged exfiltration of roughly 50TB of data. Stryker has publicly stated this was not a ransomware attack and that it found no evidence the attacker reached customer, supplier, vendor or partner systems, so the exfiltration figure is an attacker claim, not a confirmed fact. See [References](#references).
 
 ## Attack Summary
 
